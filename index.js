@@ -15,7 +15,7 @@ const configs = {
 const client = new pg.Client(configs);
 const d = new Date();
 
-let queryDoneCallback = (err, result) => {
+let changeTodos = (err, result) => {
     if (err) {
         console.log("query error", err.message);
     } else {
@@ -23,7 +23,23 @@ let queryDoneCallback = (err, result) => {
     }
 };
 
-let queryShow = (err, result) => {
+let toggleTodos = (err, result) => {
+    let text;
+    if (err) {
+        console.log("query error", err.message);
+    } else {
+        for (let i=0; i<result.rows.length; i++) {
+            let todo = result.rows[i];
+            if (todo.completed) {
+                text = `UPDATE items set completed='0', date=($2), updated='0' where id=($1) RETURNING *`;
+            } else {
+                text = `UPDATE items set completed='1', date=($2), updated='1' where id=($1) RETURNING *`;
+            }
+        }
+    }
+};
+
+let showTodos = (err, result) => {
     if (err) {
         console.log("query error", err.message);
     } else {
@@ -54,42 +70,42 @@ let clientConnectionCallback = (err) => {
         switch (input1) {
             case 'show':
                 text = "select * from items order by id asc";
-                client.query(text, queryShow);
+                client.query(text, showTodos);
                 text = "SELECT * from items";
-                client.query(text, queryShow);
+                client.query(text, showTodos);
                 break;
             case 'add':
                 text = "INSERT INTO items (name, date) VALUES ($1, $2) RETURNING *";
-                client.query(text, values, queryDoneCallback);
+                client.query(text, values, changeTodos);
                 text = "select * from items order by id asc";
-                client.query(text, queryShow);
+                client.query(text, showTodos);
                 text = "SELECT * from items";
-                client.query(text, queryShow);
+                client.query(text, showTodos);
                 break;
             case 'check':
                 text = `UPDATE items set completed='1', date=($2), updated='1' where id=($1) RETURNING *`;
-                client.query(text, values, queryDoneCallback);
+                client.query(text, values, changeTodos);
                 text = "select * from items order by id asc";
-                client.query(text, queryShow);
+                client.query(text, showTodos);
                 text = "SELECT * from items";
-                client.query(text, queryShow);
+                client.query(text, showTodos);
                 break;
             case 'delete':
                 if (input2 === 'all') {
                     text = "DELETE from items where id > 0";
-                    client.query(text, queryDoneCallback);
+                    client.query(text, changeTodos);
                     text = "select * from items order by id asc";
-                    client.query(text, queryShow);
+                    client.query(text, showTodos);
                     text = "SELECT * from items";
-                    client.query(text, queryShow);
+                    client.query(text, showTodos);
                 } else {
                     text = "DELETE from items where id=($1)"
                     values = [input2];
-                    client.query(text, values, queryDoneCallback);
+                    client.query(text, values, changeTodos);
                     text = "select * from items order by id asc";
-                    client.query(text, queryShow);
+                    client.query(text, showTodos);
                     text = "SELECT * from items";
-                    client.query(text, queryShow);
+                    client.query(text, showTodos);
                 }
                 break;
             case 'fonts':
@@ -101,20 +117,16 @@ let clientConnectionCallback = (err) => {
                 showOptions();
                 break;
         }
-        // client.query(text, values, queryDoneCallback);
+        // client.query(text, values, changeTodos);
     }
 };
 
 client.connect(clientConnectionCallback);
 
 
-extra features:
-1. ascii
-2. toggle done or not done
-3. toggle all
-4. commander
-5. refactor
-
-
-* resume
-* read SQL
+// extra features:
+// 1. ascii
+// 2. toggle done or not done
+// 3. toggle all
+// 4. commander
+// 5. refactor
